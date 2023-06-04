@@ -43,6 +43,7 @@ ko_to_en = {
 }
 
 real_estate = [
+    'realEstate_image',
     'realEstate_roadAddress',
     'realEstate_areaNumberAddress',
     'jeonse_monthlyRent_type',
@@ -105,12 +106,14 @@ def get_rscodes(file, region_url, driver):
             items += tmp
 
         for item in items:
+            img_src = item.find_element(
+                By.TAG_NAME, 'img').get_attribute('src')
             item.click()
             time.sleep(1)
             driver.switch_to.window(driver.window_handles[1])
 
             code = driver.current_url.split("/")[-1]
-            file.write(f"{code}\n")
+            file.write(f"{code},{img_src}\n")
             driver.close()
             driver.switch_to.window(driver.window_handles[0])
 
@@ -130,7 +133,6 @@ def extract_dabang_data():
     file = open("./dabang_rscodes.csv", "w")
 
     for reg, info in json_obj.items():
-        print(info)
         region_url = f'{base_url}"id":"{info["id"]}","type":"{info["type"]}","name":"{info["name"]}"{last_url}'
 
         get_rscodes(file, region_url, driver)
@@ -166,7 +168,7 @@ def category_price(e, dict1, dict2):
         elif "관리비" in x:
             p_elem = tmp[1].find_element(By.CSS_SELECTOR, 'p:nth-child(1)')
             tmp = p_elem.get_attribute('innerText').strip()
-            print(tmp)
+
             if tmp != "없음":
                 dict2[ko_to_en["관리비"]] = int(
                     float(re.findall(r'\d+\.?\d*', tmp)[0])*10000)
@@ -288,16 +290,15 @@ def extract_details(code_list):
         writer.writeheader()
 
     for code in code_list:
-        item_url = f"{base_url}/{code}"
+        item_url = f"{base_url}/{code[0]}"
 
         driver.get(item_url)
 
         content = driver.find_elements(
             By.CSS_SELECTOR, '#content .styled__Content-sc-11huzff-5.eDgOXo > div')
 
-        details = {}
         # elems = content.find_elements(By.TAG_NAME, "div")
-        dict1 = {}
+        dict1 = {"realEstate_img_src": code[1]}
         for op in real_estate:
             dict1[op] = None
         dict2 = {}
