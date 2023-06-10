@@ -101,21 +101,25 @@ def get_rscodes(file, region_url, driver):
                     items.append(t)
         else:
             print("normal")
-            tmp = ul.find_elements(
-                By.CLASS_NAME, "styled__CardItem-sc-5dgg47-3")
+            tmp = ul.find_elements(By.CSS_SELECTOR, "li")
             items += tmp
 
         for item in items:
-            img_src = item.find_element(
-                By.TAG_NAME, 'img').get_attribute('src')
-            item.click()
-            time.sleep(1)
-            driver.switch_to.window(driver.window_handles[1])
+            # img_src = item.find_element(
+            #     By.CSS_SELECTOR, 'div img').get_attribute('src')
+            img_src = WebDriverWait(driver, 10).until(
+                EC.presence_of_element_located((By.TAG_NAME, "img"))
+            ).get_attribute("src")
+            try:
+                item.click()
+                driver.switch_to.window(driver.window_handles[1])
 
-            code = driver.current_url.split("/")[-1]
-            file.write(f"{code},{img_src}\n")
-            driver.close()
-            driver.switch_to.window(driver.window_handles[0])
+                code = driver.current_url.split("/")[-1]
+                file.write(f"{code},{img_src}\n")
+                driver.close()
+                driver.switch_to.window(driver.window_handles[0])
+            except:
+                pass
 
 
 def extract_dabang_data():
@@ -133,6 +137,7 @@ def extract_dabang_data():
     file = open("./dabang_rscodes.csv", "w")
 
     for reg, info in json_obj.items():
+        print(reg)
         region_url = f'{base_url}"id":"{info["id"]}","type":"{info["type"]}","name":"{info["name"]}"{last_url}'
 
         get_rscodes(file, region_url, driver)
