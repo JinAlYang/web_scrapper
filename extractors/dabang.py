@@ -10,6 +10,7 @@ from selenium.webdriver.support import expected_conditions as EC
 import time
 from urllib.parse import unquote
 import csv
+import requests
 import re
 
 ko_to_en = {
@@ -46,6 +47,8 @@ real_estate = [
     'realEstate_image',
     'realEstate_roadAddress',
     'realEstate_areaNumberAddress',
+    'realEstate_latitude',
+    'realEstate_longtitude',
     'jeonse_monthlyRent_type',
     'realEstate_deposit',
     'realEstate_monthly_payment',
@@ -284,6 +287,19 @@ def write_dict_to_csv(dictionary, filename):
         writer.writerow(dictionary)
 
 
+def extract_tude(code):
+    driver = webdriver.Chrome()
+    url = f"http://www.dabangapp.com/api/3/new-room/near?api_version=3.0.1&call_type=web&room_id={code[0]}&version=1"
+    driver.get(url)
+    content = driver.find_element(
+        By.CSS_SELECTOR, 'body > pre').get_attribute('innerText')
+    json_data = json.loads(content)
+    # print(json_data)
+    driver.close()
+
+    return json_data['random_location']
+
+
 def extract_details(code_list):
     driver = webdriver.Chrome()
     base_url = 'https://www.dabangapp.com/room'
@@ -315,6 +331,9 @@ def extract_details(code_list):
             if tmp in categories.keys():
                 dict1, dict2 = categories[tmp](category, dict1, dict2)
 
-        print(dict1, dict2)
+        ll = extract_tude(code)
+        dict1['realEstate_latitude'] = ll[1]
+        dict1['realEstate_longtitude'] = ll[0]
+
         write_dict_to_csv(dict1, "realEstate.csv")
         write_dict_to_csv(dict2, "realEstateDetail.csv")
